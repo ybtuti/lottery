@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 
 contract Lottery is VRFConsumerBase, Ownable{
     address payable[] public players;
@@ -22,6 +23,8 @@ contract Lottery is VRFConsumerBase, Ownable{
 
     uint256 public fee;
     bytes32 public keyhash;
+
+    event RequestedRandomness(bytes32 requestId);
 
     constructor(address _priceFeedAddress, 
     address _vrfCoordinator, 
@@ -61,9 +64,10 @@ contract Lottery is VRFConsumerBase, Ownable{
         lottery_state = LOTTERY_STATE.OPEN;
     }
 
-    function endLottery() public {
+    function endLottery() public onlyOwner {
         lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
         bytes32 requestID = requestRandomness(keyhash, fee);
+        emit RequestedRandomness(requestId);
     }
     function fullfillRandomness(bytes32 _requestId, uint256 _randomness) internal override{
         require((lottery_state == LOTTERY_STATE.CALCULATING_WINNER, "you aren't there yet")
